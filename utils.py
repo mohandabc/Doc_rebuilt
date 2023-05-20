@@ -3,6 +3,7 @@ from skimage.segmentation import felzenszwalb,  slic, quickshift, watershed
 from skimage.measure import label
 from skimage.color import rgb2gray, rgb2hsv
 from skimage.filters import sobel
+from skimage import exposure
 from time import time
 import cv2
 
@@ -269,3 +270,33 @@ def _prepare_images(segmentation_result, ground_truth):
     if len(ground_truth.shape)>2:
         g_truth = ground_truth[:,:,0]
     return seg_res, g_truth
+
+
+def Histogram_equalization(image):
+    image = exposure.equalize_hist(image)
+    return image
+
+def contrast_stretching(image):
+    # Apply contrast stretching
+    p2, p98 = np.percentile(image, (2, 98))
+    image = exposure.rescale_intensity(image, in_range=(p2, p98))
+    return image
+
+def restore_cut_parts(image, i, j):
+    d = 1
+    if len(image.shape) == 3:
+        w, l, d = image.shape
+    else:
+        w, l = image.shape
+    
+
+    left_block = np.zeros((w, i, d))
+    right_block = np.zeros((w, abs(j), d))
+
+    top_block = np.zeros((i, l+i+abs(j), d))
+    bottom_block = np.zeros((abs(j), l+i+abs(j), d))
+
+    line = np.concatenate((left_block,image, right_block), axis=1)
+    res = np.concatenate((top_block, line, bottom_block), axis=0)
+    
+    return res
