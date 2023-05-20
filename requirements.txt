@@ -1,0 +1,9 @@
+tensorflow==2.9.1
+keras==2.9.0
+scikit-image==0.19.3
+opencv-python==4.6.0.66
+matplotlib
+pydot
+graphviz
+streamlit
+pytest==7.1.3
