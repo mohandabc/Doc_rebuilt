@@ -38,11 +38,32 @@ def model_B():
     return Model(inputs = [input_1, input_2], outputs = M)
 
 def model_RGB():
-    return model_B() #tmp
+    im_shapes = [(31, 31, 3), (63, 63, 3)]
+    kernel_sizes = [4, 6]
+    pool_sizes = [2, 4]
+    n_filters = 60
+
+
+    input_1 = Input(shape=im_shapes[0], name=f"level_1")
+    W1 = Conv2D(filters = n_filters, kernel_size = kernel_sizes[0], activation='relu')(input_1)
+    W1 = MaxPooling2D(pool_size = pool_sizes[0])(W1)
+
+    input_2 = Input(shape=im_shapes[1], name=f"level_2")
+    W2 = Conv2D(filters = n_filters, kernel_size = kernel_sizes[1], activation='relu')(input_2)
+    W2 = MaxPooling2D(pool_size = pool_sizes[1])(W2)
+  
+    M = [W1, W2]
+    M = concatenate(inputs = M)
+
+    M = Flatten()(M)
+    M = Dense(2, activation='softmax', name = "classification")(M)
+
+    return Model(inputs = [input_1, input_2], outputs = M)
 
 class CNN():
     def __init__(self, model = "default"):
         self.config = TRAIN_CONFIG
+        self.model = model
         self._build_CNN(model)
 
     def set_batch_size(self, value):
@@ -67,7 +88,7 @@ class CNN():
             checkpoint_path,
             monitor='val_loss',
             verbose=1,
-            save_best_only=True,
+            save_best_only=False,
             mode='min',
             save_freq='epoch'
         )
