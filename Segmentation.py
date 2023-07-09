@@ -93,8 +93,8 @@ class Segmentation:
             self.model = load_model(model_path)
         # self.superpixel_method
 
-    def f_segmentation(self):
-        """F_segmentation impliments the complete methode and it works on a folder of images not one image
+    def segmentation(self):
+        """segmentation impliments the complete methode and it works on a folder of images not one image
         It segments image using two quick superpixel methods, then computes difference and intersection
         The difference pixels are classifed again pixel by pixel. this result replaces the frst difference and
         added to the intersection to create final segmentation
@@ -116,13 +116,13 @@ class Segmentation:
                 image = rescale(image, resize_factor, channel_axis=2, anti_aliasing=True)
                 print('resized to : ', image.shape)
             
-            image = utils.remove_hair(image)
+            image = remove_hair(image)
             # image = Histogram_equalization(image)
-            segment_result_slic, sp_map1 = self.segment_sp(img = image, 
+            segment_result_slic, sp_map1 = self.superpixel_classification(img = image, 
                                             model = self.model, 
                                             superpixelate_method='slic',
                                             config=config_slic)
-            segment_result_wat, sp_map2 = self.segment_sp(img = image, 
+            segment_result_wat, sp_map2 = self.superpixel_classification(img = image, 
                                             model = self.model, 
                                             superpixelate_method='watershed',
                                             config=config_watershed)
@@ -135,11 +135,11 @@ class Segmentation:
             # if both return black result, do histogram equalization then repeat once
             if (np.sum(difference)/difference.size < 0.001 and np.sum(intersection)/intersection.size < 0.001):
                 image = Histogram_equalization(image)
-                segment_result_slic, sp_map1 = self.segment_sp(img = image, 
+                segment_result_slic, sp_map1 = self.superpixel_classification(img = image, 
                                             model = self.model, 
                                             superpixelate_method='slic',
                                             config=config_slic)
-                segment_result_wat, sp_map2 = self.segment_sp(img = image, 
+                segment_result_wat, sp_map2 = self.superpixel_classification(img = image, 
                                             model = self.model, 
                                             superpixelate_method='watershed',
                                             config=config_watershed)
@@ -188,7 +188,7 @@ class Segmentation:
             yield segmentation, img_name, segment_result_slic, segment_result_wat
     
 
-    def segment_sp(self, img, model, superpixelate_method = 'watershed', config = None):
+    def superpixel_classification(self, img, model, superpixelate_method = 'watershed', config = None):
         """Segments input image into 2 classes using trained model
         Classify superpixels generated with superpixelate_method
         
@@ -220,7 +220,7 @@ class Segmentation:
         return [res, superpixel_map]
 
     @timer
-    def segment(self, img, model : str, size : float= None):
+    def pixel_classification(self, img, model : str, size : float= None):
         """Segments input image into 2 classes using trained model
         Classify each pixel of the image
         

@@ -44,8 +44,6 @@ class DataGenerator(Sequence):
         # Create Validation dataset
         if validation_split is not None:
             n = int(len(self.images_list1) * validation_split)
-            print(f"validation split {n}")
-            print(n)
             if subset == 'train':
                 self.images_list1 = self.images_list1[n:]
                 self.images_list2 = self.images_list2[n:]

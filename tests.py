@@ -40,7 +40,7 @@ def train_CNN():
     path = Path('Built_dataset')
     cnn_name = "RGB_ISIC2017"
 
-    cnn_model = CNN("RGB")
+    cnn_model = CNN("B")
     cnn_model.set_epochs(30)
     cnn_model.set_batch_size(1024)
     cnn_model.display(name = cnn_name, graph = True)
@@ -49,7 +49,9 @@ def train_CNN():
     path_dataset_2 = path / 'data2' / 'train'
 
     train_gen = DataGenerator(path_dataset_1, path_dataset_2, seed=1, validation_split=0.2, subset='train')
+    # train_gen.set_data_type('RGB')
     validation = DataGenerator(path_dataset_1, path_dataset_2, seed=1, validation_split=0.2, subset='validation')
+    # validation.set_data_type('RGB')
 
     history = cnn_model.train(train_gen, validation)
     with open('./models/trainHistoryDict', 'wb') as file_pi:
@@ -78,10 +80,13 @@ def train_CNN():
 
 
 def create_dataset():
+    """Our CNN works on windows of the image (parts) and since we want them to be reusable
+    we will generate them once and save them as a dataset. So we will not work with original 
+    dataset but with the generated on
+    """
     from Dataset import Dataset
 
     original_dataset_path = Path("D:") / 'THESE' / 'CODE' / 'Doctorat' / 'ISIC2017' / 'train'
-    # dataset = Dataset("D:\\THESE\\CODE\\Doctorat\\ISIC2017\\train")
     dataset = Dataset(original_dataset_path)
     dataset.process()
 
@@ -219,6 +224,11 @@ def fill_holes():
         img = io.imread(mask_path / mask)
         filled_mask=  fill_holes(img)
         io.imsave(output_path / mask, filled_mask)
+
+
+"""
+Comment or uncomment one of these function calls to execute a code
+"""
 
 # create_dataset()
 train_CNN()
