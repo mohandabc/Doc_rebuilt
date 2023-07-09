@@ -12,6 +12,16 @@ def getLargestCC(segmentation):
     largestCC = labels == np.argmax(np.bincount(labels.flat, weights=segmentation.flat))
     return largestCC.astype(np.uint8)
 
+def fill_holes(mask):
+    # Convert mask to binary image
+    mask_binary = np.uint8(mask)
+
+    # Perform morphological closing to fill holes
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (40, 40))  # Adjust kernel size as needed
+    mask_filled = cv2.morphologyEx(mask_binary, cv2.MORPH_CLOSE, kernel)
+
+    return mask_filled
+
 def remove_hair(img):
     image = img.copy()
     if image.dtype not in (np.float64, np.float32, np.uint8):

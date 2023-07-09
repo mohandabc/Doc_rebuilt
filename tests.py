@@ -6,14 +6,14 @@ def test_CNN():
     from DataGenerator import DataGenerator
 
     path = Path('Built_dataset')
-    cnn_name = 'B_ISIC2017'
+    cnn_name = 'RGB_model_epoch_12_val_loss_0.26'
     # Predict on test dataset
     path_dataset_test_1 = path / 'data1' / 'test'
     path_dataset_test_2 = path / 'data2' / 'test'
     test_gen = DataGenerator(path_dataset_test_1, path_dataset_test_2)
 
     # Load CNN if already trained
-    cnn_model = load_model(f'models\\{cnn_name}.h5')
+    cnn_model = load_model(f'models\\models_to_test\\{cnn_name}.h5')
     res = cnn_model.predict(test_gen)
 
 
@@ -38,10 +38,11 @@ def train_CNN():
     import pickle
 
     path = Path('Built_dataset')
-    cnn_name = "B_ISIC2017"
+    cnn_name = "RGB_ISIC2017"
 
-    cnn_model = CNN("default")
-    cnn_model.set_epochs(100)
+    cnn_model = CNN("RGB")
+    cnn_model.set_epochs(30)
+    cnn_model.set_batch_size(1024)
     cnn_model.display(name = cnn_name, graph = True)
 
     path_dataset_1 = path / 'data1' / 'train'
@@ -84,19 +85,22 @@ def create_dataset():
     dataset = Dataset(original_dataset_path)
     dataset.process()
 
-def compute_performances():
+def compute_performances(res='res', gts='gts'):
     from performance import compute_performance
     from skimage import io
     import os 
     import csv
 
-    ground_truths_path = Path('gts')
-    results_path = Path('res')
+    ground_truths_path = Path(gts)
+    results_path = Path(res)
 
     file_headers = ['img', 'sensitivity', 'Specificity', 'Accuracy', 'jaccard_index', 'dice_coef']
     results_per_model = [dir for dir in os.listdir(results_path) if (results_path/dir).is_dir()]
 
     for model_results in results_per_model:
+        _sum = {'sensitivity' : 0, 'Specificity' : 0, 'Accuracy' : 0, 'jaccard_index' : 0, 'dice_coef' : 0}
+        _max = {'sensitivity' : 0, 'Specificity' : 0, 'Accuracy' : 0, 'jaccard_index' : 0, 'dice_coef' : 0}
+        _min = {'sensitivity' : 1, 'Specificity' : 1, 'Accuracy' : 1, 'jaccard_index' : 1, 'dice_coef' : 1}
         print(f"------------------{model_results}-------------------\n")
         results_dict = []
         results = [img for img in os.listdir(results_path/model_results) if not (results_path/model_results/img).is_dir()]
@@ -115,8 +119,41 @@ def compute_performances():
             accuracy = compute_performance(res_img, gt_img)
             accuracy['img'] = f"{res} -- {gt}"
             results_dict.append(accuracy)
+
+            _sum['sensitivity'] += results_dict[-1]['sensitivity']
+            _sum['Specificity'] += results_dict[-1]['Specificity']
+            _sum['Accuracy'] += results_dict[-1]['Accuracy']
+            _sum['jaccard_index'] += results_dict[-1]['jaccard_index']
+            _sum['dice_coef'] += results_dict[-1]['dice_coef']
+
+            _max['sensitivity'] = max(_max['sensitivity'], results_dict[-1]['sensitivity'])
+            _max['Specificity'] = max(_max['Specificity'], results_dict[-1]['Specificity'])
+            _max['Accuracy'] = max(_max['Accuracy'], results_dict[-1]['Accuracy'])
+            _max['jaccard_index'] = max(_max['jaccard_index'], results_dict[-1]['jaccard_index'])
+            _max['dice_coef'] = max(_max['dice_coef'], results_dict[-1]['dice_coef'])
+
+            _min['sensitivity'] = min(_min['sensitivity'], results_dict[-1]['sensitivity'])
+            _min['Specificity'] = min(_min['Specificity'], results_dict[-1]['Specificity'])
+            _min['Accuracy'] = min(_min['Accuracy'], results_dict[-1]['Accuracy'])
+            _min['jaccard_index'] = min(_min['jaccard_index'], results_dict[-1]['jaccard_index'])
+            _min['dice_coef'] = min(_min['dice_coef'], results_dict[-1]['dice_coef'])
             # print(f"{res} -- {gt}\n  {accuracy}\n\n")
         
+        _mean = {}
+        _mean['sensitivity'] = _sum['sensitivity'] / len(results) 
+        _mean['Specificity'] = _sum['Specificity'] / len(results) 
+        _mean['Accuracy'] = _sum['Accuracy'] / len(results) 
+        _mean['jaccard_index'] = _sum['jaccard_index'] / len(results) 
+        _mean['dice_coef'] = _sum['dice_coef'] / len(results) 
+        
+        _max['img'] = "Max"
+        _min['img'] = "Min"
+        _mean['img'] = "Mean"
+
+        results_dict.append(_mean)
+        results_dict.append(_min)
+        results_dict.append(_max)
+    
         output_path = results_path / model_results / 'performance'
         output_path.mkdir(exist_ok=True)
         with open(output_path /"results.csv", "w") as csv_file:
@@ -124,7 +161,69 @@ def compute_performances():
             writer.writeheader()
             writer.writerows(results_dict)
 
+def segmentation():
+    # In this file we will use the trained model to segment, then perform a diagnosis
+    from skimage import io, img_as_ubyte
+    from Segmentation import Segmentation
+    import os
+    from pathlib import Path
+
+    models_path = Path("models") /"models_to_test"
+    models_to_test = [model for model in os.listdir(models_path) if not (models_path/model).is_dir()]
+    imgs_path = Path("D:/THESE/CODE/Doctorat/all_datasets/ISIC2017/test/Images")
+
+    results_path = Path("res")
+    if not results_path.exists():
+        os.mkdir(Path('res'))
+
+    for model in models_to_test:
+        model_name = model.split('.')[0]
+        data_type = model_name.split('_')[0]
+        model_path = models_path / model
+
+        print(f"---------------- USING MODEL {model}-------------------\n")
+        model_result_path = results_path / model_name
+        if not model_result_path.exists():
+            os.mkdir(model_result_path)
+        if not (model_result_path / 'EXTRA').exists():
+            os.mkdir(model_result_path / 'EXTRA')
+
+        s = Segmentation(imgs_path, model_path, data_type)
+        seg_results = s.segmentation()
+
+        print('Start Segmentation...........\n')
+        for seg, name, sp1, sp2 in seg_results:
+            print('Segmentation over ...........\n')
+            
+            res_path = model_result_path / name
+            io.imsave(res_path, img_as_ubyte(seg))
+            io.imsave(model_result_path / 'EXTRA' / f'slic_{name}', img_as_ubyte(sp1))
+            io.imsave(model_result_path / 'EXTRA' / f'wat_{name}', img_as_ubyte(sp2))
+            print('Start Segmentation...........\n')
+
+def fill_holes():
+    import os 
+    from skimage import io
+    from utils import fill_holes
+
+    mask_path = Path('B_1model_epoch_13_val_loss_0')
+    output_path = Path('filled')
+    output_path.mkdir(exist_ok=True)
+
+    masks = [img for img in os.listdir(mask_path) if not (mask_path/img).is_dir()]
+
+    i = 1
+    for mask in masks:
+        print(f'{i}------{mask}------')
+        i+=1
+        img = io.imread(mask_path / mask)
+        filled_mask=  fill_holes(img)
+        io.imsave(output_path / mask, filled_mask)
+
 # create_dataset()
 train_CNN()
 # test_CNN()
-# compute_performances()
+# compute_performances('B_1model_epoch_13_val_loss_0', 'D:\\THESE\\CODE\\Doctorat\\dev2.0\\testing\\gts')
+
+# segmentation()
+# fill_holes()
