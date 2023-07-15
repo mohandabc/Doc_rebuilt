@@ -8,7 +8,7 @@ from pathlib import Path
 from utils import remove_black_corners, superpixelate, find_borders, expand_img
 CONFIG = {
 
-    "nb_processed_imgs" : -1,
+    "nb_processed_imgs" : 7000,
     "n_levels" : 3, 
     "levels":[
              (31, 31), 

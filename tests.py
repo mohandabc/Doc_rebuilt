@@ -37,11 +37,11 @@ def train_CNN():
     import matplotlib.pyplot as plt
     import pickle
 
-    path = Path('Built_dataset')
-    cnn_name = "RGB_ISIC2017"
+    path = Path('HAM10000')
+    cnn_name = "B_HAM10000"
 
-    cnn_model = CNN("B")
-    cnn_model.set_epochs(30)
+    cnn_model = CNN(cnn_name)
+    cnn_model.set_epochs(10)
     cnn_model.set_batch_size(1024)
     cnn_model.display(name = cnn_name, graph = True)
 
@@ -86,8 +86,9 @@ def create_dataset():
     """
     from Dataset import Dataset
 
-    original_dataset_path = Path("D:") / 'THESE' / 'CODE' / 'Doctorat' / 'ISIC2017' / 'train'
-    dataset = Dataset(original_dataset_path)
+    # original_dataset_path = Path("D:") / 'THESE' / 'CODE' / 'Doctorat' / 'ISIC2017' / 'train'
+    original_dataset_path = Path("D:") / 'THESE' / 'CODE' / 'Doctorat' / 'all_datasets' / 'HAM10000'
+    dataset = Dataset(original_dataset_path, output_folder="HAM10000", images_folder="HAM10000_images", masks_folder="HAM10000_segmentations_lesion")
     dataset.process()
 
 def compute_performances(res='res', gts='gts'):
@@ -155,9 +156,9 @@ def compute_performances(res='res', gts='gts'):
         _min['img'] = "Min"
         _mean['img'] = "Mean"
 
-        results_dict.append(_mean)
-        results_dict.append(_min)
-        results_dict.append(_max)
+        results_dict.insert(0, _min)
+        results_dict.insert(0, _max)
+        results_dict.insert(0, _mean)
     
         output_path = results_path / model_results / 'performance'
         output_path.mkdir(exist_ok=True)
@@ -175,7 +176,8 @@ def segmentation():
 
     models_path = Path("models") /"models_to_test"
     models_to_test = [model for model in os.listdir(models_path) if not (models_path/model).is_dir()]
-    imgs_path = Path("D:/THESE/CODE/Doctorat/all_datasets/ISIC2017/test/Images")
+    # imgs_path = Path("D:/THESE/CODE/Doctorat/all_datasets/HAM10000/HAM10000_images")
+    imgs_path = Path("img_to_test")
 
     results_path = Path("res")
     if not results_path.exists():
@@ -211,8 +213,8 @@ def fill_holes():
     from skimage import io
     from utils import fill_holes
 
-    mask_path = Path('B_1model_epoch_13_val_loss_0')
-    output_path = Path('filled')
+    mask_path = Path('res')  / 'B_model_epoch_24_val_loss_0'
+    output_path = Path('filled') / '3000'
     output_path.mkdir(exist_ok=True)
 
     masks = [img for img in os.listdir(mask_path) if not (mask_path/img).is_dir()]
@@ -231,9 +233,9 @@ Comment or uncomment one of these function calls to execute a code
 """
 
 # create_dataset()
-train_CNN()
+# train_CNN()
 # test_CNN()
-# compute_performances('B_1model_epoch_13_val_loss_0', 'D:\\THESE\\CODE\\Doctorat\\dev2.0\\testing\\gts')
-
-# segmentation()
-# fill_holes()
+segmentation()
+compute_performances()
+fill_holes()
+compute_performances('filled/3000', 'gts')

@@ -21,14 +21,14 @@ class DataGenerator(Sequence):
         self.subset = subset
         self.data_type = 'B'
         
-        self.images_list1 = os.listdir(data1_path / '0')
+        self.images_list1 = os.listdir(data1_path / '0')[:400_000]
         N0 = len(self.images_list1)
 
-        self.images_list1.extend(os.listdir(data1_path / '1'))
+        self.images_list1.extend(os.listdir(data1_path / '1')[:400_000])
         N1 = len(self.images_list1) - N0
 
-        self.images_list2 = os.listdir(data2_path / '0')
-        self.images_list2.extend(os.listdir(data2_path / '1'))
+        self.images_list2 = os.listdir(data2_path / '0')[:400_000]
+        self.images_list2.extend(os.listdir(data2_path / '1')[:400_000])
 
         self.labels = np.hstack((np.zeros(N0, dtype=int), np.ones(N1, dtype=int)))
 

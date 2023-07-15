@@ -61,7 +61,8 @@ def model_RGB():
     return Model(inputs = [input_1, input_2], outputs = M)
 
 class CNN():
-    def __init__(self, model = "default"):
+    def __init__(self, name, model = "default"):
+        self.name = name
         self.config = TRAIN_CONFIG
         self.model = model
         self._build_CNN(model)
@@ -83,7 +84,7 @@ class CNN():
 
     def train(self, train_gen, validation_gen, save_dir="./models"):
         callback = EarlyStopping(monitor='loss', patience=3)
-        checkpoint_path = save_dir + "/model_epoch_{epoch:02d}_val_loss_{val_loss:.2f}.h5"
+        checkpoint_path = save_dir + "/"+ self.name +"_epoch_{epoch:02d}_val_loss_{val_loss:.2f}.h5"
         checkpoint = ModelCheckpoint(
             checkpoint_path,
             monitor='val_loss',
